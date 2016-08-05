@@ -13,45 +13,102 @@ namespace Console1
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("CLIENT");
-            TcpClient client = new TcpClient();
+            //Console.WriteLine("CLIENT");
+            //TcpClient client = new TcpClient();
 
-            while (true)
-                try
-                {
+            //NetworkStream ns;
+            //client.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 11000));
 
-                    client.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 11000));
-                    string str;
-                    StreamWriter sw = new StreamWriter(client.GetStream());
-                    sw.AutoFlush = true;
-                    str = Console.ReadLine();
-
-                    Console.WriteLine("You : " + str);
-                    sw.WriteLine(str);
-
-                    //StreamReader sr = new StreamReader(client.GetStream());
-                    //Console.WriteLine("Companion : " + sr.ReadLine());
-
-                    //Console.WriteLine("Client : Пока");
-                    //sw.WriteLine("Пока");
-                    //Console.WriteLine("Server : " + sr.ReadLine());
-                    
+            //while (true)
+            //    try
+            //    {
 
 
-                }
-                catch (SocketException ex)
-                {
-                    Console.WriteLine("Connection error:\n" + ex.ToString());
-                }
-                catch (System.IO.IOException io)
-                {
-                    Console.WriteLine("IOException:\n" + io.ToString());
-                }
-                finally
-                {
-                    Console.ReadKey();
-                    client.Close();
-                }
+            //        string str;
+            //        StreamWriter sw = new StreamWriter(client.GetStream());
+            //        sw.AutoFlush = true;
+            //        str = Console.ReadLine();
+
+            //        Console.WriteLine("You : " + str);
+            //        Console.WriteLine("Connection :" + client.Connected);
+            //        sw.WriteLine(str);
+
+            //        //StreamReader sr = new StreamReader(client.GetStream());
+            //        //Console.WriteLine("Companion : " + sr.ReadLine());
+
+            //        //Console.WriteLine("Client : Пока");
+            //        //sw.WriteLine("Пока");
+            //        //Console.WriteLine("Server : " + sr.ReadLine());
+
+
+
+            //    }
+            //    catch (SocketException ex)
+            //    {
+            //        Console.WriteLine("Connection error:\n" + ex.ToString());
+            //    }
+            //    catch (System.IO.IOException io)
+            //    {
+            //        Console.WriteLine("IOException:\n" + io.ToString());
+            //    }
+            //    finally
+            //    {
+            //        Console.ReadKey();
+            //        //client.Close();
+            //    }
+            try
+            {
+                SendMessageFromSocket(11000);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            finally
+            {
+                Console.ReadLine();
+            }
         }
+
+        static void SendMessageFromSocket(int port)
+        {
+            // Буфер для входящих данных
+            byte[] bytes = new byte[1024];
+
+            // Соединяемся с удаленным устройством
+
+            // Устанавливаем удаленную точку для сокета
+            IPHostEntry ipHost = Dns.GetHostEntry("localhost");
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+
+            Socket sender = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            // Соединяем сокет с удаленной точкой
+            sender.Connect(ipEndPoint);
+
+            Console.Write("Введите сообщение: ");
+            string message = Console.ReadLine();
+
+            Console.WriteLine("Сокет соединяется с {0} ", sender.RemoteEndPoint.ToString());
+            byte[] msg = Encoding.UTF8.GetBytes(message);
+
+            // Отправляем данные через сокет
+            int bytesSent = sender.Send(msg);
+
+            // Получаем ответ от сервера
+            int bytesRec = sender.Receive(bytes);
+
+            Console.WriteLine("\nОтвет от сервера: {0}\n\n", Encoding.UTF8.GetString(bytes, 0, bytesRec));
+
+            // Используем рекурсию для неоднократного вызова SendMessageFromSocket()
+            if (message.IndexOf("<TheEnd>") == -1)
+                SendMessageFromSocket(port);
+
+            // Освобождаем сокет
+            sender.Shutdown(SocketShutdown.Both);
+            sender.Close();
+        }
+
     }
 }
